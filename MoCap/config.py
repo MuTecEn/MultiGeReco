@@ -2,7 +2,8 @@ import torch
 
 def get_config():
     config = {
-        "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/mocap2/",
+        # "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/mocap2/",
+        "dataset_path": "C:/Users/annammc/Downloads/Anna/MoCap/mocap/",
         "n_class": 5,
         "batch_size": 32,
         "optimizer": {
@@ -14,11 +15,12 @@ def get_config():
             "step_size": 20,
             "gamma": 0.5
         },
-        "epochs": 150,
+        "epochs": 100,
         "n_folds": 5,
         "device": "cuda:1" if torch.cuda.is_available() else "cpu",
         "model": "Simple1DCNN",
-        "save_path": "./save",
+        # "save_path": "./save",
+        "save_path": "C:/Users/annammc/Downloads/Anna/Audio/save",
         "log_step": 100,
         "val_step": 10,
     }
