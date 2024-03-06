@@ -4,10 +4,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import numpy as np
 import time
-from MoCap.dataset import MultiDataset
+from dataset import MultiDataset
 from utils.logger import setup_logging
-from MoCap.model import get_model
-from MoCap.config import get_config
+from model import get_model
+from config import get_config
 
 def train(model, train_loader, criterion, optimizer, device):
     model.train()
