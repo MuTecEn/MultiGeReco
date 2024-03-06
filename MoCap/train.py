@@ -8,6 +8,7 @@ from dataset import MultiDataset
 from utils.logger import setup_logging
 from model import get_model
 from config import get_config
+import matplotlib.pyplot as plt
 
 def train(model, train_loader, criterion, optimizer, device):
     model.train()
@@ -42,6 +43,9 @@ def main():
     config = get_config()
     device = torch.device(config["device"])
 
+    train_losses = []
+    val_losses = []
+
     train_dataset = MultiDataset(csv_file=config["dataset_path"] + 'train.csv',
                                  root_dir=config["dataset_path"], nb_class = config["n_class"],
                                  )  
@@ -61,15 +65,26 @@ def main():
     best_val_loss = np.inf
     for epoch in range(config["epochs"]):
         train_loss = train(model, train_loader, criterion, optimizer, device)
-        val_loss = validate(model, val_loader, criterion, device)
+        val_loss= validate(model, val_loader, criterion, device)
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
 
         print(f'Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
-        # Save the model if validation loss has decreased
-        # if val_loss < best_val_loss:
-        #     print(f'Validation loss decreased ({best_val_loss:.4f} --> {val_loss:.4f}). Saving model...')
-        #     torch.save(model.state_dict(), config["save_path"])
-        #     best_val_loss = val_loss
+    # Plotting the training and validation loss
+    plt.figure()
+    plt.plot(train_losses, label='Training loss')
+    plt.plot(val_losses, label='Validation loss')
+    plt.title('Losses')
+    plt.legend()
+    plt.savefig('mocap_loss.png')
+    plt.show()
+
+    # Save the model if validation loss has decreased
+    if val_loss < best_val_loss:
+        print(f'Validation loss decreased ({best_val_loss:.4f} --> {val_loss:.4f}). Saving model...')
+        torch.save(model.state_dict(), config["save_path"])
+        best_val_loss = val_loss
 
 if __name__ == '__main__':
     main()
