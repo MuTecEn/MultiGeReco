@@ -3,72 +3,37 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
-import cv2
-from sklearn.model_selection import KFold
 
-class MultiDataset(Dataset):
-
-    def __init__(self, video_file, root_dir, nb_class, num_folds=5):
-        self.df_csv = pd.read_csv(video_file)
+class VideoDataset(Dataset):
+    def __init__(self, csv_file, root_dir, nb_class, max_video_length):
+        self.df_csv = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.nb_class = nb_class
-        self.num_folds = num_folds
-
-        self.file_names = [f for f in os.listdir(root_dir) if f.endswith(".mov")]
-
-        # Perform K-Fold cross-validation
-        self.kf = KFold(n_splits=num_folds, shuffle=True)
+        self.max_video_length = max_video_length
 
     def __len__(self):
-        return len(self.df_csv) * self.num_folds
+        return len(self.df_csv)
 
-    def __getitem__(self, fold_idx):
-        # Get the train and test indices for this fold
-        train_indices, test_indices = list(self.kf.split(self.df_csv))[fold_idx]
+    def __getitem__(self, idx):
+        # Load the video feature (.npy file)
+        data_path = os.path.join(self.root_dir, self.df_csv.iloc[idx, 1])
+        video_feature = np.load(data_path)  # This should load the stacked vertical and horizontal motiongrams
+        
+        # Flatten video_feature if necessary
+        video_feature_flat = video_feature.reshape(-1)  # Change this depending on the shape of your data
+        
+        # Truncate or pad the video feature vector to a fixed size
+        feature_length = video_feature_flat.shape[0]
+        if feature_length > self.max_video_length:
+            feat = video_feature_flat[:self.max_video_length]  # Truncate
+        else:
+            feat = np.pad(video_feature_flat, (0, self.max_video_length - feature_length), 'constant')  # Pad
+        
+        feat = torch.tensor(feat, dtype=torch.float32)
+        
+        # Get the label from the dataframe and convert it to a one-hot encoded tensor
+        label = self.df_csv.iloc[idx, 2]
+        label_one_hot = torch.zeros(self.nb_class)
+        label_one_hot[label] = 1
 
-        # Get the file names for the train and test sets
-        train_file_names = [self.file_names[i] for i in train_indices]
-        test_file_names = [self.file_names[i] for i in test_indices]
-
-        video_frames_list, features_list, labels_list = [], [], []
-
-        for file_name in train_file_names:
-            video_file_path = os.path.join(self.root_dir, file_name)
-            video_capture = cv2.VideoCapture(video_file_path)
-
-            # Extract video frames - modify the logic for video frame extraction
-            frames = []
-            success, image = video_capture.read()
-            while success:
-                frames.append(image)
-                success, image = video_capture.read()
-
-            # Extract features from video frames - add your specific video feature extraction here
-            # Example: Get the mean pixel value for each frame
-            features = [np.mean(frame) for frame in frames]  # Replace with actual video feature extraction logic
-
-            # Pad or truncate to a fixed length (e.g., 1000 frames)
-            max_frames = 1000
-            if len(features) < max_frames:
-                padding = np.zeros(max_frames - len(features))
-                features = np.concatenate((features, padding))
-            else:
-                features = features[:max_frames]
-
-            # Convert features to PyTorch tensor
-            features = torch.tensor(features, dtype=torch.float32)
-            
-            # Get label from DataFrame
-            label = self.df_csv.loc[self.df_csv['filename'] == file_name, 'target'].iloc[0]
-
-            # Create one-hot encoding for the label
-            label_one_hot = torch.zeros(self.nb_class)
-            label_one_hot[label] = 1
-
-            video_capture.release()
-
-            video_frames_list.append(frames)
-            features_list.append(features)
-            labels_list.append(label_one_hot)
-
-        return video_frames_list, features_list, labels_list
+        return feat, label_one_hot
