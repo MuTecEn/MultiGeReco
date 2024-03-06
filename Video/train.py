@@ -4,10 +4,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import numpy as np
 import time
-from Audio.dataset import MultiDataset
+from dataset import MultiDataset
 from utils.logger import setup_logging
-from Audio.model import get_model
-from Audio.config import get_config
+from model import get_model
+from config import get_config
+import matplotlib.pyplot as plt
 
 def train(model, train_loader, criterion, optimizer, device):
     model.train()
@@ -42,34 +43,46 @@ def main():
     config = get_config()
     device = torch.device(config["device"])
 
+    train_losses = []
+    val_losses = []
+    
+    max_video_length = 4897*2  # Substitute with the actual max length of your data
+    nb_classes = config["n_class"]
+
     train_dataset = MultiDataset(csv_file=config["dataset_path"] + 'train.csv',
-                                 root_dir=config["dataset_path"], nb_class = config["n_class"],
-                                 )  
+                                 root_dir=config["dataset_path"], 
+                                 nb_class=nb_classes, 
+                                 max_video_length=max_video_length)  
     val_dataset = MultiDataset(csv_file=config["dataset_path"] + 'test.csv',
-                               root_dir=config["dataset_path"], nb_class = config["n_class"],
-                               )  
+                               root_dir=config["dataset_path"], 
+                               nb_class=nb_classes, 
+                               max_video_length=max_video_length)  
 
     train_loader = DataLoader(train_dataset, batch_size=config["batch_size"], shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=config["batch_size"], shuffle=False, num_workers=4)
 
-    model = get_model(config["model"], config["n_class"]).to(device)
+    model = get_model(config["model"], nb_classes).to(device)
 
     criterion = nn.CrossEntropyLoss()
-    # optimizer = optim.RMSprop(model.parameters(), lr=config["optimizer"]["lr"], weight_decay=config["optimizer"]["weight_decay"])
     optimizer = optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], weight_decay=config["optimizer"]["weight_decay"])
 
     best_val_loss = np.inf
     for epoch in range(config["epochs"]):
         train_loss = train(model, train_loader, criterion, optimizer, device)
         val_loss = validate(model, val_loader, criterion, device)
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
 
         print(f'Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
-        # Save the model if validation loss has decreased
-        # if val_loss < best_val_loss:
-        #     print(f'Validation loss decreased ({best_val_loss:.4f} --> {val_loss:.4f}). Saving model...')
-        #     torch.save(model.state_dict(), config["save_path"])
-        #     best_val_loss = val_loss
+    # Plotting the training and validation loss
+    plt.figure()
+    plt.plot(train_losses, label='Training loss')
+    plt.plot(val_losses, label='Validation loss')
+    plt.title('Losses')
+    plt.legend()
+    plt.savefig('video_loss.png')
+    plt.show()
 
 if __name__ == '__main__':
     main()

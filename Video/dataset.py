@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 
-class VideoDataset(Dataset):
+class MultiDataset(Dataset):
     def __init__(self, csv_file, root_dir, nb_class, max_video_length):
         self.df_csv = pd.read_csv(csv_file)
         self.root_dir = root_dir
