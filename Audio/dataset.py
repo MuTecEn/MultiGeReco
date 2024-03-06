@@ -3,50 +3,41 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
-import librosa
+
 
 class MultiDataset(Dataset):
-
-    def __init__(self, audio_file, root_dir, nb_class):
-        self.df_csv = pd.read_csv(audio_file)
+    def __init__(self, csv_file, root_dir, nb_class, max_length):
+        self.df_csv = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.nb_class = nb_class
+        self.max_length = max_length  # This would be the maximum sequence length
         
-        self.file_names = [f for f in os.listdir(root_dir) if f.endswith(".wav")]
-
     def __len__(self):
         return len(self.df_csv)
 
     def __getitem__(self, idx):
-        file_name = self.file_names[idx]
-        audio_file_path = os.path.join(self.root_dir, file_name)
-        
-        # Load audio file
-        y, sr = librosa.load(audio_file_path, sr=None)
-        
-        # Extract features
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-        chromagram = librosa.feature.chroma_stft(y=y, sr=sr)
-        tempogram = librosa.feature.tempogram(y=y, sr=sr)
-        
-        # Concatenate the features
-        features = np.concatenate((mfcc, chromagram, tempogram), axis=0)
+        data_path = os.path.join(self.root_dir, self.df_csv.iloc[idx, 1])
+        features = np.load(data_path)
 
-        # Pad or truncate to a fixed length (e.g., 1000 frames)
-        max_time_frames = 1000
-        if features.shape[1] < max_time_frames:
-            padding = np.zeros((features.shape[0], max_time_frames - features.shape[1]))
-            features = np.concatenate((features, padding), axis=1)
+        # Assuming the features are already a 2D numpy array of shape (feature_size, time_steps)
+        # We will flatten the features to form a 1D array
+        flattened_features = features.flatten()    
+
+        # Then we will pad or truncate to the fixed length `self.max_length`
+        if flattened_features.shape[0] < self.max_length:
+            # Pad the feature to the max_length if it's short
+            feature_padded = np.pad(flattened_features, (0, self.max_length - flattened_features.shape[0]), 'constant')
         else:
-            features = features[:, :max_time_frames]
+            # Truncate the feature to max_length if it's long
+            feature_padded = flattened_features[:self.max_length]
         
-        # Convert features to PyTorch tensor
-        features = torch.tensor(features, dtype=torch.float32)
-        
+        # Convert the numpy array to a PyTorch tensor
+        feat = torch.tensor(feature_padded, dtype=torch.float32)
+
+        # Get the label for the current data point
         label = self.df_csv.iloc[idx, 2]
-        
         # Create one-hot encoding for the label
         label_one_hot = torch.zeros(self.nb_class)
         label_one_hot[label] = 1
 
-        return features, label_one_hot
+        return feat, label_one_hot
