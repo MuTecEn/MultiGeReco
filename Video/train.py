@@ -14,18 +14,19 @@ def train(model, train_loader, criterion, optimizer, device):
     model.train()
     running_loss = 0.0
     for batch_idx, (inputs, labels) in enumerate(train_loader):
-
         inputs = inputs.unsqueeze(1)
         inputs, labels = inputs.to(device), labels.to(device)
-        
+
         optimizer.zero_grad()
         outputs = model(inputs)
+        labels = labels.argmax(dim=1)  # Convert one-hot labels to class indices
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-        
+
         running_loss += loss.item()
     return running_loss / len(train_loader)
+
 
 def validate(model, val_loader, criterion, device):
     model.eval()
@@ -34,10 +35,13 @@ def validate(model, val_loader, criterion, device):
         for inputs, labels in val_loader:
             inputs = inputs.unsqueeze(1)
             inputs, labels = inputs.to(device), labels.to(device)
+
             outputs = model(inputs)
+            labels = labels.argmax(dim=1)  # Convert one-hot labels to class indices
             loss = criterion(outputs, labels)
             val_loss += loss.item()
     return val_loss / len(val_loader)
+
 
 def main():
     config = get_config()
@@ -46,22 +50,23 @@ def main():
     train_losses = []
     val_losses = []
     
-    max_video_length = 4897*2  # Substitute with the actual max length of your data
+    # max_video_length = 4897*2  # Substitute with the actual max length of your data
     nb_classes = config["n_class"]
 
     train_dataset = MultiDataset(csv_file=config["dataset_path"] + 'train.csv',
                                  root_dir=config["dataset_path"], 
-                                 nb_class=nb_classes, 
-                                 max_video_length=max_video_length)  
+                                 nb_class=nb_classes)  # Updated input shape
     val_dataset = MultiDataset(csv_file=config["dataset_path"] + 'test.csv',
                                root_dir=config["dataset_path"], 
-                               nb_class=nb_classes, 
-                               max_video_length=max_video_length)  
+                               nb_class=nb_classes)  # Updated input shape
 
     train_loader = DataLoader(train_dataset, batch_size=config["batch_size"], shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=config["batch_size"], shuffle=False, num_workers=4)
 
+    print(f"Model: {config['model']}")
     model = get_model(config["model"], nb_classes).to(device)
+    print(f"Model architecture:\n{model}")
+    print(f"Model parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], weight_decay=config["optimizer"]["weight_decay"])

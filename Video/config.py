@@ -2,7 +2,8 @@ import torch
 
 def get_config():
     config = {
-        "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/video/",
+        # "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/video/",
+        "dataset_path": "C:/Users/annammc/Downloads/Anna/Video/video/",
         "n_class": 5,
         "batch_size": 32,
         "optimizer": {
