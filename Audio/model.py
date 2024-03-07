@@ -11,7 +11,7 @@ class Simple1DCNN(nn.Module):
         self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=2, stride=1, padding=1)
         self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=2, stride=1, padding=1)
         
-        self.num_flat_features = self._get_conv_output(9794)
+        self.num_flat_features = self._get_conv_output(431)
         
         self.fc1 = nn.Linear(self.num_flat_features, 128)
         self.fc2 = nn.Linear(128, num_classes)
