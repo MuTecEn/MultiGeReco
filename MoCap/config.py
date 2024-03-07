@@ -19,8 +19,7 @@ def get_config():
         "n_folds": 5,
         "device": "cuda:1" if torch.cuda.is_available() else "cpu",
         "model": "Simple1DCNN",
-        # "save_path": "./save",
-        "save_path": "C:/Users/annammc/Downloads/Anna/Audio/save",
+        "save_path": "./save",
         "log_step": 100,
         "val_step": 10,
     }
