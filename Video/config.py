@@ -17,7 +17,7 @@ def get_config():
         "epochs": 100,
         "n_folds": 5,
         "device": "cuda:1" if torch.cuda.is_available() else "cpu",
-        "model": "Simple1DCNN",
+        "model": "Simple2DCNN",
         "save_path": "./save",
         # "save_path": "/itf-fi-ml/shared/users/annammc/Anna/save",
         "log_step": 100,

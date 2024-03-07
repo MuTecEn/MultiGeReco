@@ -14,7 +14,7 @@ def get_config():
             "step_size": 20,
             "gamma": 0.5
         },
-        "epochs": 50,
+        "epochs": 250,
         "n_folds": 5,
         "device": "cuda:1" if torch.cuda.is_available() else "cpu",
         "model": "Simple1DCNN",
