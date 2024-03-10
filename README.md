@@ -15,18 +15,6 @@ Clone the repository to your local machine:
 git clone https://github.com/mutecen/smc.git
 ```
 
-## Change into the project directory:
-
-```shell
-cd cnn-project
-```
-
-## Train the CNN model:
-
-```shell
-python train.py
-```
-
 This will train the CNN model using the provided input tensor and labels. 
 
 ## License
