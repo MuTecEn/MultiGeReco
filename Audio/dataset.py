@@ -17,7 +17,7 @@ class MultiDataset(Dataset):
         data_path =os.path.join(self.root_dir, self.df_csv.iloc[idx, 1])
         features = np.load(data_path)
 
-        # for the np.square get the 1st row for rms or 2nd for scontrast (idx[0 for rms])
+        # get the 1st row for rms or 2nd for scontrast 
 
         feat = features[0]
         feat = np.pad(feat, (0, 431 - feat.shape[0]), 'constant')

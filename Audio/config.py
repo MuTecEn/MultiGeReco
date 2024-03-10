@@ -2,7 +2,7 @@ import torch
 
 def get_config():
     config = {
-        "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/audio/",
+        "dataset_path": "/path/to/your/audio/folder/",
         "n_class": 5,
         "batch_size": 32,
         "optimizer": {
@@ -14,12 +14,11 @@ def get_config():
             "step_size": 20,
             "gamma": 0.5
         },
-        "epochs": 250,
+        "epochs": 100,
         "n_folds": 5,
-        "device": "cuda:1" if torch.cuda.is_available() else "cpu",
-        "model": "Simple1DCNN",
+        "device": "cpu",
+        "model": "AudioCNN",
         "save_path": "./save",
-        # "save_path": "/itf-fi-ml/shared/users/annammc/Anna/save",
         "log_step": 100,
         "val_step": 10,
     }

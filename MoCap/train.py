@@ -49,7 +49,7 @@ def main():
     train_dataset = MultiDataset(csv_file=config["dataset_path"] + 'train.csv',
                                  root_dir=config["dataset_path"], nb_class = config["n_class"],
                                  )  
-    val_dataset = MultiDataset(csv_file=config["dataset_path"] + 'test.csv',
+    val_dataset = MultiDataset(csv_file=config["dataset_path"] + f'test.csv',
                                root_dir=config["dataset_path"], nb_class = config["n_class"],
                                )  
 
