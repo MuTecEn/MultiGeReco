@@ -3,7 +3,7 @@ import torch
 def get_config():
     config = {
         # "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/video/",
-        "dataset_path": "C:/Users/annammc/Downloads/Anna/Video/video/",
+        "dataset_path": "/path/to/your/video/",
         "n_class": 5,
         "batch_size": 32,
         "optimizer": {
@@ -19,8 +19,7 @@ def get_config():
         "k_folds": 5,
         "device": "cuda:1" if torch.cuda.is_available() else "cpu",
         "model": "Simple1DCNN",
-        # "save_path": "./save",
-        # "save_path": "/itf-fi-ml/shared/users/annammc/Anna/save",
+        "save_path": "./save",
         "log_step": 100,
         "val_step": 10,
     }

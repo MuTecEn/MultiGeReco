@@ -57,42 +57,6 @@ def calculate_accuracy(true_labels, predicted_labels):
     return accuracy
 
 def main():
-    # config = get_config()
-    # device = torch.device(config["device"])
-
-    # train_losses = []
-    # val_losses = []
-    # best_val_loss = np.inf
-
-    # for fold in range(1, config["k_folds"] + 1):
-    #     train_dataset = MultiDataset(csv_file=config["dataset_path"] + f'fold{fold}_train.csv',
-    #                                  root_dir=config["dataset_path"], nb_class=config["n_class"])
-
-    #     # Create the validation dataset from the remaining fold
-    #     val_dataset = MultiDataset(csv_file=config["dataset_path"] + f'fold{fold}_test.csv',
-    #                                root_dir=config["dataset_path"], nb_class=config["n_class"])
-
-    #     train_loader = DataLoader(train_dataset, batch_size=config["batch_size"], shuffle=True, num_workers=4)
-    #     val_loader = DataLoader(val_dataset, batch_size=config["batch_size"], shuffle=False, num_workers=4)
-
-    #     model = get_model(config["model"], config["n_class"]).to(device)
-
-    #     criterion = nn.CrossEntropyLoss()
-    #     optimizer = optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], weight_decay=config["optimizer"]["weight_decay"])
-
-    #     for epoch in range(config["epochs"]):
-    #         train_loss = train(model, train_loader, criterion, optimizer, device)
-    #         val_loss= validate(model, val_loader, criterion, device)
-    #         train_losses.append(train_loss)
-    #         val_losses.append(val_loss)
-
-    #         print(f'Fold {fold}, Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
-
-    #         # Save the model if validation loss has decreased
-    #         if val_loss < best_val_loss:
-    #             print(f'Fold {fold} - Validation loss decreased ({best_val_loss:.4f} --> {val_loss:.4f}). Saving model...')
-    #             torch.save(model.state_dict(), f'model_fold{fold}.pt')
-    #             best_val_loss = val_loss
 
     config = get_config()  # Load configuration settings
     device = torch.device(config["device"])  # Set the device for model training (e.g., CPU or GPU)
@@ -146,7 +110,7 @@ def main():
     # Save the model if the validation loss has decreased
     if val_loss < best_val_loss:
         print(f'Validation loss decreased ({best_val_loss:.4f} --> {val_loss:.4f}). Saving model...')
-        torch.save(model.state_dict(), '/itf-fi-ml/shared/users/annammc/Anna/save/video_model.pth') # Save the model's state dictionary
+        torch.save(model.state_dict(), '/path/to/save/') # Save the model's state dictionary
         best_val_loss = val_loss  # Update the best validation loss
 
 if __name__ == '__main__':
