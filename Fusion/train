@@ -1,0 +1,170 @@
+import torch
+import torch.nn as nn
+import numpy as np
+import matplotlib.pyplot as plt
+from config import get_config
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+import pandas as pd
+import torch.optim as optim
+import matplotlib.pyplot as plt
+
+from fusionmodel import get_model
+from fusiondataset import FusionDataset
+
+from AUDIO.model import AudioCNN
+from MOCAP.model import Simple1DCNN
+from VIDEO.model_video import VideoCNN
+
+from AUDIO.dataset_audio import AudioDataset
+from MOCAP.dataset_mc import MotionDataset
+from VIDEO.dataset import MultiDataset
+
+from torch.optim import lr_scheduler
+
+# Create instances of the specific model classes
+model1 = AudioCNN(num_classes=5)  
+model2 = Simple1DCNN(num_classes=5)  
+model3 = VideoCNN(num_classes=5)  
+
+# Load the saved state_dicts into the model instances
+model1.load_state_dict(torch.load('/itf-fi-ml/shared/users/annammc/Anna/save/audio_model.pth'))
+print(model1.fc5.weight.shape)
+model2.load_state_dict(torch.load('/itf-fi-ml/shared/users/annammc/Anna/save/mocap_model.pth'))
+print(model2.fc5.weight.shape)
+model3.load_state_dict(torch.load('/itf-fi-ml/shared/users/annammc/Anna/save/video_model.pth'))
+print(model3.fc5.weight.shape)
+
+representations_mocap = []
+representations_video = []
+representations_audio = []
+
+model1.eval()
+model2.eval()
+model3.eval()
+
+config = get_config()
+
+dataset_mocap = MotionDataset(csv_file='/itf-fi-ml/shared/users/annammc/Anna/MOCAP/combined_mocap.csv', root_dir='/itf-fi-ml/shared/users/annammc/Anna/MOCAP/mocap2', nb_class=config['n_class'])
+dataset_video = MultiDataset(csv_file='/itf-fi-ml/shared/users/annammc/Anna/VIDEO/combined_video.csv', root_dir='/itf-fi-ml/shared/users/annammc/Anna/VIDEO/video', nb_class=config['n_class'])
+dataset_audio = AudioDataset(csv_file='/itf-fi-ml/shared/users/annammc/Anna/AUDIO/combined_audio.csv' , root_dir = '/itf-fi-ml/shared/users/annammc/Anna/AUDIO/audio', nb_class=config['n_class'])
+
+dataloader_mocap = DataLoader(dataset_mocap, batch_size=config['batch_size'], shuffle=True)
+dataloader_video = DataLoader(dataset_video, batch_size=config['batch_size'], shuffle=True)
+dataloader_audio = DataLoader(dataset_audio, batch_size=config['batch_size'], shuffle=True)
+
+for input_mocap, label in dataset_mocap:
+    # Pass the input_mocap through model2 to get the representation
+    representation = model2(input_mocap.unsqueeze(0).unsqueeze(0))
+    
+    # Append label as additional dimensions to the representation tensor
+    label_tensor = torch.tensor(label)  # You can convert the label to a tensor here
+    
+    representation_label = torch.cat((representation, label_tensor.unsqueeze(0)), dim=1)
+    representations_mocap.append(representation_label)
+
+for input_video, label in dataset_video:
+    # Pass the input_video through model3 to get the representation
+    representation = model3(input_video.unsqueeze(0).unsqueeze(0))
+    
+    # Append label as additional dimensions to the representation tensor
+    label_tensor = torch.tensor(label)  # You can convert the label to a tensor here
+    
+    representation_label = torch.cat((representation, label_tensor.unsqueeze(0)), dim=1)
+    representations_video.append(representation_label)
+
+for input_audio, label in dataset_audio:
+    # Pass the input_audio through model1 to get the representation
+    representation = model1(input_audio.unsqueeze(0).unsqueeze(0))
+    
+    # Append label as additional dimensions to the representation tensor
+    label_tensor = torch.tensor(label)  # You can convert the label to a tensor here
+    
+    representation_label = torch.cat((representation, label_tensor.unsqueeze(0)), dim=1)
+    representations_audio.append(representation_label)
+
+# Concatenate representations from all models
+representations_mocap_tensor = torch.cat(representations_mocap, dim=0)
+representations_video_tensor = torch.cat(representations_video, dim=0)
+representations_audio_tensor = torch.cat(representations_audio, dim=0)
+
+representations = torch.cat([representations_mocap_tensor, representations_video_tensor, representations_audio_tensor], dim=1)
+
+representations = torch.tensor(representations, dtype=torch.int64)
+
+fused_dataset = FusionDataset(representations)
+
+train_size = int(0.6 * len(fused_dataset))
+val_size = len(fused_dataset) - train_size
+
+train_set, val_set = torch.utils.data.random_split(fused_dataset, [train_size, val_size])
+
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=config['batch_size'], shuffle=True)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=config['batch_size'], shuffle=False)
+
+config = get_config()  # Load configuration settings
+device = config['device']
+input_size = representations.shape[1]  # get the number of columns in fused_representations
+
+model = get_model(input_size, num_classes=config['n_class']).to(device)
+
+criterion = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], weight_decay=config["optimizer"]["weight_decay"])
+
+train_losses = []
+val_losses = []
+
+scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+
+for epoch in range(config['epochs']):
+    scheduler.step()
+    for inputs, targets in train_loader:
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.step()
+
+    # Validation
+    model.eval()
+    val_loss = 0.0
+    total = 0
+    correct = 0
+    with torch.no_grad():
+        for inputs, targets in val_loader:
+            outputs = model(inputs)
+            val_loss += criterion(outputs, targets).item()
+            _, predicted = torch.max(outputs, 1)
+            total += targets.size(0)
+            correct += (predicted == targets).sum().item()
+
+    # Calculate average validation loss
+    val_loss /= len(val_loader)
+    
+    # Calculate accuracy
+    accuracy = correct / total
+
+    # Print or log the training and validation loss and accuracy
+    print(f"Epoch: {epoch + 1}, Training Loss: {loss}, Validation Loss: {val_loss}, Accuracy: {accuracy}")
+
+    # Store the losses
+    train_losses.append(loss.item())
+    val_losses.append(val_loss)
+
+# Plot the losses
+plt.plot(train_losses, label='Training Loss')
+plt.plot(val_losses, label='Validation Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+# Save the plot
+plt.savefig('losses_plot.png')
+
+# Show the plot
+plt.show()
+
+# Save the trained model
+torch.save(model.state_dict(), '/itf-fi-ml/shared/users/annammc/Anna/save/fusion_model.pth')
+# %%
+    
