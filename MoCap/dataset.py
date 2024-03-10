@@ -17,7 +17,8 @@ class MultiDataset(Dataset):
     def __getitem__(self, idx):
         data_path = os.path.join(self.root_dir, self.df_csv.iloc[idx, 1])
         features = np.load(data_path)
-        
+
+        # resultant vector calculation
         L_hand = np.sqrt(np.square(features[1,:]) + np.square(features[2,:]) + np.square(features[3,:]))
         R_hand = np.sqrt(np.square(features[5,:]) + np.square(features[6,:]) + np.square(features[7,:]))
         

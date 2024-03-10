@@ -2,8 +2,7 @@ import torch
 
 def get_config():
     config = {
-        # "dataset_path": "/itf-fi-ml/shared/users/annammc/Anna/mocap2/",
-        "dataset_path": "C:/Users/annammc/Downloads/Anna/MoCap/mocap/",
+        "dataset_path": "/path/to/your/mocap/folder/",
         "n_class": 5,
         "batch_size": 32,
         "optimizer": {

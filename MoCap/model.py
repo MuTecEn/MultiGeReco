@@ -110,7 +110,7 @@ def main():
     # Save the model if the validation loss has decreased
     if val_loss < best_val_loss:
         print(f'Validation loss decreased ({best_val_loss:.4f} --> {val_loss:.4f}). Saving model...')
-        torch.save(model.state_dict(), '/itf-fi-ml/shared/users/annammc/Anna/save/mocap_model.pth') # Save the model's state dictionary
+        torch.save(model.state_dict(), '/path/to/save/') # Save the model's state dictionary
         best_val_loss = val_loss  # Update the best validation loss
 
 if __name__ == '__main__':
